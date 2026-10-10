@@ -454,6 +454,45 @@
       transform: translateY(-1px);
     }
 
+        .country-switch {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 620px;
+      margin-bottom: 6px;
+    }
+
+    .country-button {
+      flex: 1 1 0;
+      min-width: 90px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-color);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: var(--glass-shadow-soft);
+      backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+      transition: transform 0.15s ease, background var(--transition-speed) ease;
+    }
+
+    .country-button.active {
+      background: rgba(0, 122, 255, 0.22);
+      border-color: rgba(0, 122, 255, 0.30);
+    }
+
+    .country-hint {
+      color: var(--hint-color);
+      font-size: 14px;
+      text-align: center;
+      margin-top: 8px;
+    }
+    
     .fade-enter {
       opacity: 0;
       transform: translateY(10px);
@@ -495,19 +534,9 @@
           <h2>Robux</h2>
         </div>
 
-        <div class="category-card" data-group="topup" data-category="Itunes USA">
-          <img src="https://i.pinimg.com/736x/3d/a2/c3/3da2c3a6ffb6a6c40c96276dc0995a0e.jpg" alt="Itunes USA">
-          <h2>Itunes USA</h2>
-        </div>
-
-        <div class="category-card" data-group="topup" data-category="Itunes Турция">
-          <img src="https://i.pinimg.com/736x/f9/c9/cd/f9c9cd3acaa98d9b512aa1b27532749f.jpg" alt="Itunes Турция">
-          <h2>Itunes Турция</h2>
-        </div>
-
-        <div class="category-card" data-group="topup" data-category="Itunes Индия">
-          <img src="https://i.pinimg.com/736x/fa/45/0a/fa450a259ca0019d30e45f4a5bee7986.jpg" alt="Itunes Индия">
-          <h2>Itunes Индия</h2>
+        <div class="category-card" data-group="topup" data-folder="iTunes">
+          <img src="https://i.pinimg.com/736x/3d/a2/c3/3da2c3a6ffb6a6c40c96276dc0995a0e.jpg" alt="iTunes">
+          <h2>iTunes</h2>
         </div>
 
         <div class="category-card" data-group="topup" data-category="Steam USA">
@@ -613,6 +642,8 @@
       <div class="products-container">
         <button class="back-button" id="back-to-main">Назад</button>
         <h2 id="products-title">Категория</h2>
+        <div id="country-switch" class="country-switch" style="display: none;"></div>
+        <p id="country-hint" class="country-hint" style="display: none;">Выберите страну</p>
         <div id="products-list"></div>
       </div>
     </div>
@@ -990,6 +1021,17 @@
       }
     ];
 
+        const folders = {
+      'iTunes': {
+        title: 'iTunes',
+        countries: [
+          { label: '🇺🇸 USA', category: 'Itunes USA' },
+          { label: '🇹🇷 Турция', category: 'Itunes Турция' },
+          { label: '🇮🇳 Индия', category: 'Itunes Индия' }
+        ]
+      }
+    };
+
     let cart = [];
 
     const mainPage = document.getElementById('main-page');
@@ -1052,11 +1094,52 @@
       });
     }
 
+        const countrySwitchEl = document.getElementById('country-switch');
+    const countryHintEl = document.getElementById('country-hint');
+
+    function hideCountrySwitch() {
+      countrySwitchEl.style.display = 'none';
+      countrySwitchEl.innerHTML = '';
+      countryHintEl.style.display = 'none';
+    }
+
+    function showFolder(folderName) {
+      const folder = folders[folderName];
+      if (!folder) return;
+
+      productsTitleEl.textContent = folder.title;
+      productsListEl.innerHTML = '';
+      countrySwitchEl.innerHTML = '';
+      countrySwitchEl.style.display = 'flex';
+      countryHintEl.style.display = 'block';
+
+      folder.countries.forEach(country => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'country-button';
+        btn.textContent = country.label;
+        btn.addEventListener('click', () => {
+          countrySwitchEl.querySelectorAll('.country-button')
+            .forEach(b => b.classList.toggle('active', b === btn));
+          countryHintEl.style.display = 'none';
+          renderItems(country.category);
+        });
+        countrySwitchEl.appendChild(btn);
+      });
+    }
+
     function showProducts(category) {
       const categoryData = productsData.find(item => item.category === category);
       if (!categoryData) return;
 
+      hideCountrySwitch();
       productsTitleEl.textContent = categoryData.category;
+      renderItems(category);
+    }
+
+    function renderItems(category) {
+      const categoryData = productsData.find(item => item.category === category);
+      if (!categoryData) return;
 
       productsListEl.innerHTML = '';
       categoryData.items.forEach(product => {
@@ -1123,8 +1206,12 @@
 
       document.querySelectorAll('.category-card').forEach(card => {
         card.addEventListener('click', () => {
-          const category = card.getAttribute('data-category');
-          showProducts(category);
+          const folder = card.getAttribute('data-folder');
+          if (folder) {
+            showFolder(folder);
+          } else {
+            showProducts(card.getAttribute('data-category'));
+          }
           showPage(productsPage);
         });
       });
